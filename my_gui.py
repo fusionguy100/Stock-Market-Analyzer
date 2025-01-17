@@ -7,8 +7,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 class StockMarketApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Stock Market Analyzer")
-        self.root.geometry("600x400")
+        self.root.title("Stock Market Analyzer by Jacob Newell")
+
+        # Get screen width and set the window width to the screen width and a fixed height
+        #screen_width = self.root.winfo_screenwidth()
+        self.root.geometry("1200x600")  # Set width to full screen width, height to 400px
 
         # Input for Stock Ticker
         tk.Label(root, text="Enter Stock Ticker:", font=("Arial", 12)).pack(pady=10)
@@ -18,6 +21,10 @@ class StockMarketApp:
         # Fetch Data Button
         self.fetch_button = tk.Button(root, text="Fetch and Analyze", command=self.fetch_data, font=("Arial", 12))
         self.fetch_button.pack(pady=10)
+
+        # Status Label
+        self.status_label = tk.Label(root, text="Status: N/A", font=("Arial", 12))
+        self.status_label.pack(pady=10)
 
         # Plot Area
         self.plot_frame = tk.Frame(root)
@@ -45,10 +52,22 @@ class StockMarketApp:
             data["MACD"] = data["EMA_12"] - data["EMA_26"]
             data["Signal_Line"] = data["MACD"].ewm(span=9, adjust=False).mean()
 
+            # Determine Buy or Sell Status
+            self.check_buy_sell(data)
+
             # Plot the data
             self.plot_data(data, ticker)
         except Exception as e:
             messagebox.showerror("Error", f"Could not fetch data: {e}")
+
+    def check_buy_sell(self, data):
+        # Check for the "golden cross" (buy) and "death cross" (sell)
+        if data["SMA_20"].iloc[-1] > data["SMA_50"].iloc[-1]:
+            self.status_label.config(text="Status: Buy", fg="green")  # Buy signal
+        elif data["SMA_20"].iloc[-1] < data["SMA_50"].iloc[-1]:
+            self.status_label.config(text="Status: Sell", fg="red")  # Sell signal
+        else:
+            self.status_label.config(text="Status: Hold", fg="orange")  # Hold signal if no cross
 
     def plot_data(self, data, ticker):
         # Clear previous plots
@@ -79,6 +98,7 @@ class StockMarketApp:
         canvas = FigureCanvasTkAgg(fig, master=self.plot_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = StockMarketApp(root)
